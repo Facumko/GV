@@ -1,16 +1,29 @@
+"""
+pipeline_es/capa1/scraper.py
+FIX: IndexError en titulo[0] cuando título está vacío.
+MEJORA: Usa config.py y logger.py centralizados.
+"""
 import os
+import sys
 import sqlite3
 import json
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from datetime import datetime
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
-API_KEY = os.getenv('YOUTUBE_API_KEY')
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+from shared.config import PATHS, SCRAPER, HOOK_KEYWORDS
+from shared.logger import get_logger
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'viral_es.db')
+log = get_logger('capa1.es.scraper')
+
+load_dotenv(dotenv_path=PATHS['env'])
+API_KEY = os.getenv('YOUTUBE_API_KEY')
+DB_PATH = PATHS['es']['db']
+
 
 def init_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.execute('''CREATE TABLE IF NOT EXISTS patrones_virales (
         id INTEGER PRIMARY KEY,
@@ -25,58 +38,85 @@ def init_db():
     conn.commit()
     return conn
 
-def duracion_a_segundos(iso):
+
+def duracion_a_segundos(iso: str) -> int:
     import re
     match = re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', iso)
     if not match:
         return 0
     h, m, s = [int(x or 0) for x in match.groups()]
-    return h*3600 + m*60 + s
+    return h * 3600 + m * 60 + s
 
-def scrape_nicho(nicho, max_results=10):
+
+def clasificar_hook(titulo: str, pipeline: str = 'es') -> str:
+    t = titulo.lower()
+    for keyword in HOOK_KEYWORDS['pregunta'][pipeline]:
+        if keyword in t:
+            return 'pregunta'
+    for keyword in HOOK_KEYWORDS['experiencia'][pipeline]:
+        if keyword in t:
+            return 'experiencia'
+    if titulo and titulo[0].isdigit():   # FIX: guarda contra título vacío
+        return 'lista'
+    return 'statement'
+
+
+def scrape_nicho(nicho: str, max_results: int = SCRAPER['max_results']) -> int:
+    if not API_KEY:
+        log.error("YOUTUBE_API_KEY no encontrada en .env")
+        return 0
+
+    log.info(f"Scrapeando nicho [ES]: '{nicho}' ({max_results} videos)")
+
     youtube = build('youtube', 'v3', developerKey=API_KEY)
-    res = youtube.search().list(q=nicho, part='snippet', type='video',
-                                 order='viewCount', publishedAfter='2025-01-01T00:00:00Z',
-                                 maxResults=max_results).execute()
+    res = youtube.search().list(
+        q=nicho, part='snippet', type='video',
+        order='viewCount',
+        publishedAfter=SCRAPER['published_after'],
+        maxResults=max_results
+    ).execute()
+
     ids = [i['id']['videoId'] for i in res.get('items', [])]
     snippets = {i['id']['videoId']: i['snippet'] for i in res.get('items', [])}
 
-    stats_res = youtube.videos().list(part='statistics,contentDetails', id=','.join(ids)).execute()
+    if not ids:
+        log.warning(f"No se encontraron videos para: {nicho}")
+        return 0
+
+    stats_res = youtube.videos().list(
+        part='statistics,contentDetails', id=','.join(ids)
+    ).execute()
 
     conn = init_db()
     guardados = 0
     for v in stats_res.get('items', []):
-        vid_id = v['id']
-        stats = v['statistics']
-        views = int(stats.get('viewCount', 0))
-        likes = int(stats.get('likeCount', 0))
+        vid_id  = v['id']
+        stats   = v['statistics']
+        views   = int(stats.get('viewCount', 0))
+        likes   = int(stats.get('likeCount', 0))
         comments = int(stats.get('commentCount', 0))
         duracion = duracion_a_segundos(v['contentDetails']['duration'])
         engagement = (likes + comments) / views if views else 0
         titulo = snippets.get(vid_id, {}).get('title', '')
-        
-        # Hook tipo simple basado en título
-        if any(w in titulo.lower() for w in ['how', 'why', 'what', 'cómo', 'por qué']):
-            hook = 'pregunta'
-        elif any(w in titulo.lower() for w in ['i tried', 'i did', 'probé', 'hice']):
-            hook = 'experiencia'
-        elif titulo[0].isdigit():
-            hook = 'lista'
-        else:
-            hook = 'statement'
+        hook   = clasificar_hook(titulo, 'es')
 
         estructura = json.dumps({'titulo': titulo, 'views': views, 'likes': likes})
         url = f'https://youtube.com/watch?v={vid_id}'
 
-        conn.execute('''INSERT INTO patrones_virales 
-            (fuente_url, nicho, duracion_seg, hook_tipo, ratio_engagement, estructura, fecha_analisis)
-            VALUES (?, ?, ?, ?, ?, ?, ?)''',
-            (url, nicho, duracion, hook, round(engagement, 4), estructura, datetime.now().date()))
+        conn.execute(
+            '''INSERT INTO patrones_virales
+               (fuente_url, nicho, duracion_seg, hook_tipo, ratio_engagement, estructura, fecha_analisis)
+               VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            (url, nicho, duracion, hook, round(engagement, 4), estructura, datetime.now().date())
+        )
         guardados += 1
 
     conn.commit()
     conn.close()
-    print(f"✅ {guardados} videos guardados para nicho: {nicho}")
+    log.info(f"{guardados} videos guardados para nicho ES: '{nicho}'")
+    return guardados
+
 
 if __name__ == '__main__':
-    scrape_nicho('morning routine')
+    nicho = sys.argv[1] if len(sys.argv) > 1 else 'rutina mañana'
+    scrape_nicho(nicho)

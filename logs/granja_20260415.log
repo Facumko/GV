@@ -1,0 +1,26 @@
+[2026-04-15 17:44:10] INFO     main — Ollama — OK
+[2026-04-15 17:44:10] INFO     main — FFmpeg — OK
+[2026-04-15 17:44:10] INFO     main — Node.js — OK
+[2026-04-15 17:44:10] WARNING  main — .env no encontrado. Copiá .env.example a .env y completá la API key.
+[2026-04-15 17:44:10] WARNING  main — Algunos checks fallaron. Continuando de todos modos...
+[2026-04-15 17:44:10] INFO     main — Iniciando pipeline [ES] — pasos: ['detect', 'scrape', 'analyze', 'generate', 'tts', 'timestamps', 'render', 'register']
+[2026-04-15 17:44:11] INFO     shared.niche_detector — Analizando tendencias [ES]...
+[2026-04-15 17:44:28] WARNING  shared.niche_detector — YouTube error para 'rutina mañana': Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+[2026-04-15 17:44:40] WARNING  shared.niche_detector — YouTube error para 'consejos dinero': Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+[2026-04-15 17:44:52] WARNING  shared.niche_detector — YouTube error para 'herramientas ia': Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+[2026-04-15 17:45:04] WARNING  shared.niche_detector — YouTube error para 'motivacion fitness': Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+[2026-04-15 17:45:17] INFO     main — Ollama — OK
+[2026-04-15 17:45:17] INFO     main — FFmpeg — OK
+[2026-04-15 17:45:17] INFO     main — Node.js — OK
+[2026-04-15 17:45:17] INFO     main — .env — OK
+[2026-04-15 17:45:17] INFO     main — Iniciando pipeline [ES] — pasos: ['detect', 'scrape', 'analyze', 'generate', 'tts', 'timestamps', 'render', 'register']
+[2026-04-15 17:45:18] INFO     shared.niche_detector — Analizando tendencias [ES]...
+[2026-04-15 17:45:29] INFO     shared.niche_detector — Nicho sugerido [ES]: RUTINA MAÑANA (score: 33.61)
+[2026-04-15 17:45:42] INFO     capa1.es.scraper — Scrapeando nicho [ES]: 'motivacion fitness' (10 videos)
+[2026-04-15 17:45:44] INFO     capa1.es.scraper — 10 videos guardados para nicho ES: 'motivacion fitness'
+[2026-04-15 17:45:46] INFO     main — Patrón base: {'nicho': 'motivacion fitness', 'hook': 'statement', 'duracion': 59}
+[2026-04-15 17:47:48] ERROR    main — Error en generate [es]: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)
+[2026-04-15 17:47:53] INFO     main — Audio guardado: c:\Users\mirch\GV\pipeline_es\data\audio_001.mp3
+[2026-04-15 17:47:53] INFO     main — Audio copiado a Remotion public/: c:\Users\mirch\GV\pipeline_es\capa3\public\audio_001.mp3
+[2026-04-15 17:48:13] ERROR    main — Error en timestamps [es]: Could not find/load shared object file 'llvmlite.dll' from resource location: 'llvmlite.binding'. This could mean that the library literally cannot be found, but may also mean that the permissions are incorrect or that a dependency of/a symbol in the library could not be resolved.
+[2026-04-15 17:48:13] ERROR    main — Timestamps fallaron — abortando pipeline.
