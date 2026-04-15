@@ -8,9 +8,10 @@ from datetime import datetime
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 API_KEY = os.getenv('YOUTUBE_API_KEY')
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'viral_es.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'viral_en.db')  # FIX: era viral_es
 
 def init_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.execute('''CREATE TABLE IF NOT EXISTS patrones_virales (
         id INTEGER PRIMARY KEY,
@@ -35,12 +36,14 @@ def duracion_a_segundos(iso):
 
 def scrape_nicho(nicho, max_results=10):
     youtube = build('youtube', 'v3', developerKey=API_KEY)
-    res = youtube.search().list(q=nicho, part='snippet', type='video',
-                                 order='viewCount', publishedAfter='2025-01-01T00:00:00Z',
-                                 maxResults=max_results).execute()
+    res = youtube.search().list(
+        q=nicho, part='snippet', type='video',
+        order='viewCount', publishedAfter='2025-01-01T00:00:00Z',
+        maxResults=max_results
+    ).execute()
+
     ids = [i['id']['videoId'] for i in res.get('items', [])]
     snippets = {i['id']['videoId']: i['snippet'] for i in res.get('items', [])}
-
     stats_res = youtube.videos().list(part='statistics,contentDetails', id=','.join(ids)).execute()
 
     conn = init_db()
@@ -54,13 +57,12 @@ def scrape_nicho(nicho, max_results=10):
         duracion = duracion_a_segundos(v['contentDetails']['duration'])
         engagement = (likes + comments) / views if views else 0
         titulo = snippets.get(vid_id, {}).get('title', '')
-        
-        # Hook tipo simple basado en título
-        if any(w in titulo.lower() for w in ['how', 'why', 'what', 'cómo', 'por qué']):
+
+        if any(w in titulo.lower() for w in ['how', 'why', 'what', 'when', 'which']):
             hook = 'pregunta'
-        elif any(w in titulo.lower() for w in ['i tried', 'i did', 'probé', 'hice']):
+        elif any(w in titulo.lower() for w in ['i tried', 'i did', 'i spent', 'i tested']):
             hook = 'experiencia'
-        elif titulo[0].isdigit():
+        elif titulo and titulo[0].isdigit():
             hook = 'lista'
         else:
             hook = 'statement'

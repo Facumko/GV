@@ -10,7 +10,7 @@ export const RemotionRoot = () => (
     width={1080}
     height={1920}
     defaultProps={{
-      audioSrc: 'audio_001.mp3',
+      audioSrc: '../data/audio_001.mp3',
       timestampsPath: '../data/timestamps_001.json',
     }}
   />
