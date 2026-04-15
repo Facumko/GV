@@ -1,1 +1,11 @@
 pipeline_es/capa3/node_modules/ 
+
+*.mp3
+*.mp4
+*.wav
+pipeline_es/capa3/out/
+pipeline_es/capa3/public/
+pipeline_es/data/*.json
+pipeline_en/capa3/out/
+pipeline_en/capa3/public/
+pipeline_en/data/*.json
