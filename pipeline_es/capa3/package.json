@@ -1,0 +1,12 @@
+{
+  "name": "capa3",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "remotion studio",
+    "render": "remotion render src/index.js VideoViral out/video_001.mp4" },
+  "dependencies": {
+    "remotion": "^4.0.448",
+    "@remotion/cli": "^4.0.448"
+  }
+}
